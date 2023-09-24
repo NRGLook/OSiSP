@@ -139,6 +139,9 @@
     <ResourceCompile Include="LR1.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="C:\Users\ilyat\Downloads\background.bmp" />
+    <Image Include="C:\Users\ilyat\Downloads\restart_button.ico" />
+    <Image Include="C:\Users\ilyat\Downloads\snakehead.bmp" />
     <Image Include="LR1.ico" />
     <Image Include="small.ico" />
   </ItemGroup>

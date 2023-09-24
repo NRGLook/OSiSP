@@ -27,6 +27,47 @@ void DrawGame(HDC hdc);
 void CreateFood();
 void RestartGame(); // Добавлена функция перезапуска игры
 
+// Глобальные переменные для хранения хука
+HHOOK g_hKeyboardHook = NULL;
+
+// Прототип функции-обработчика клавиш
+LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
+
+// Глобальная переменная для хранения хендла окна сообщения
+HWND g_hMessageBox = NULL;
+
+void ShowNotification(LPCWSTR message) {
+    // Получить размер экрана
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    // Размер и положение окна сообщения
+    int notificationWidth = 300;
+    int notificationHeight = 100;
+    int notificationX = (screenWidth - notificationWidth) / 2;
+    int notificationY = (screenHeight - notificationHeight) / 2;
+
+    // Создание окна сообщения
+    g_hMessageBox = CreateWindow(L"STATIC", message, WS_POPUP | WS_VISIBLE | SS_CENTER | WS_BORDER | MB_TOPMOST,
+        notificationX, notificationY, notificationWidth, notificationHeight, hWnd, NULL, hInst, NULL);
+
+    // Установка таймера для закрытия окна через 4 секунды
+    SetTimer(hWnd, 2, 400, NULL);
+
+    // Центрирование текста в окне сообщения
+    SendMessage(g_hMessageBox, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), MAKELPARAM(TRUE, 0));
+    SendMessage(g_hMessageBox, STM_SETIMAGE, IMAGE_ICON, (LPARAM)LoadIcon(NULL, IDI_INFORMATION));
+}
+
+
+
+void CloseNotification() {
+    if (g_hMessageBox != NULL) {
+        DestroyWindow(g_hMessageBox);
+        g_hMessageBox = NULL;
+    }
+}
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow) {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
@@ -90,6 +131,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
     // Создание кнопки рестарта
     hRestartButton = CreateWindow(L"BUTTON", L"Restart", WS_CHILD | WS_VISIBLE, 10, 10, 100, 30, hWnd, (HMENU)1, hInstance, NULL);
 
+    // Установка глобального хука на клавиши
+    g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, GetModuleHandle(NULL), 0);
+
     return TRUE;
 }
 
@@ -128,14 +172,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                 directionY = 1;
             }
             break;
-        case 'R': // Обработка клавиши 'R' для рестарта игры
-            RestartGame();
-            break;
         }
     }
                    break;
     case WM_TIMER:
-        if (gameOver) {
+        if (wParam == 2) {
+            CloseNotification(); // Закрыть окно уведомления
+        }
+        else if (gameOver) {
             KillTimer(hWnd, 1);
         }
         else {
@@ -171,7 +215,7 @@ void UpdateGame() {
         SetWindowText(hWnd, szTitle);
 
         if (foodCount % 5 == 0) {
-            MessageBox(hWnd, L"Поздравляем! Вы собрали 5 яблок!", L"Поздравление", MB_OK);
+            ShowNotification(L"Поздравляем! Вы собрали 5 яблок!");
         }
     }
     else {
@@ -189,7 +233,7 @@ void UpdateGame() {
     }
 
     if (gameOver) {
-        MessageBox(hWnd, L"Game Over", L"Game Over", MB_OK);
+        ShowNotification(L"Game Over");
     }
 
     InvalidateRect(hWnd, nullptr, TRUE);
@@ -198,26 +242,57 @@ void UpdateGame() {
 void DrawGame(HDC hdc) {
     HBRUSH greenBrush = CreateSolidBrush(RGB(0, 128, 0));
     HBRUSH redBrush = CreateSolidBrush(RGB(255, 0, 0));
+    HBRUSH borderBrush = CreateSolidBrush(RGB(0, 0, 0)); // Цвет границы
+    HBRUSH backgroundBrush = CreateSolidBrush(RGB(0, 255, 0)); // Цвет заднего фона за границей
+
     RECT rect;
     GetClientRect(hWnd, &rect);
-    FillRect(hdc, &rect, (HBRUSH)(COLOR_WINDOW + 1));
+    FillRect(hdc, &rect, backgroundBrush); // Заливаем задний фон цветом за границей
+
+    // Рассчитываем размеры и координаты игровой области
+    int gameAreaWidth = width * gridSize;
+    int gameAreaHeight = height * gridSize;
+    int borderSize = 10; // Толщина границы
+
+    int gameAreaLeft = (rect.right - gameAreaWidth) / 2;
+    int gameAreaTop = (rect.bottom - gameAreaHeight) / 2;
+    int gameAreaRight = gameAreaLeft + gameAreaWidth;
+    int gameAreaBottom = gameAreaTop + gameAreaHeight;
+
+    // Рисуем границу игровой области
+    RECT borderRect = { gameAreaLeft - borderSize, gameAreaTop - borderSize, gameAreaRight + borderSize, gameAreaBottom + borderSize };
+    FillRect(hdc, &borderRect, borderBrush);
+
+    // Рисуем вертикальные линии границы
+    for (int x = gameAreaLeft - borderSize; x <= gameAreaRight + borderSize; x += gridSize) {
+        MoveToEx(hdc, x, gameAreaTop - borderSize, NULL);
+        LineTo(hdc, x, gameAreaBottom + borderSize);
+    }
+
+    // Рисуем горизонтальные линии границы
+    for (int y = gameAreaTop - borderSize; y <= gameAreaBottom + borderSize; y += gridSize) {
+        MoveToEx(hdc, gameAreaLeft - borderSize, y, NULL);
+        LineTo(hdc, gameAreaRight + borderSize, y);
+    }
 
     for (const auto& segment : snake) {
-        rect.left = segment.x * gridSize;
-        rect.top = segment.y * gridSize;
+        rect.left = gameAreaLeft + segment.x * gridSize;
+        rect.top = gameAreaTop + segment.y * gridSize;
         rect.right = rect.left + gridSize;
         rect.bottom = rect.top + gridSize;
         FillRect(hdc, &rect, greenBrush);
     }
 
-    rect.left = food.x * gridSize;
-    rect.top = food.y * gridSize;
+    rect.left = gameAreaLeft + food.x * gridSize;
+    rect.top = gameAreaTop + food.y * gridSize;
     rect.right = rect.left + gridSize;
     rect.bottom = rect.top + gridSize;
     FillRect(hdc, &rect, redBrush);
 
     DeleteObject(greenBrush);
     DeleteObject(redBrush);
+    DeleteObject(borderBrush);
+    DeleteObject(backgroundBrush);
 }
 
 void CreateFood() {
@@ -242,3 +317,17 @@ void RestartGame() {
     }
 }
 
+// Обработчик клавиш
+LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode == HC_ACTION) {
+        if (wParam == WM_KEYDOWN) {
+            // Обработка нажатия клавиши (например, 'R' для рестарта игры)
+            KBDLLHOOKSTRUCT* pKeyStruct = (KBDLLHOOKSTRUCT*)lParam;
+            if (pKeyStruct->vkCode == 'R') {
+                // Вызывайте функцию рестарта игры здесь
+                RestartGame();
+            }
+        }
+    }
+    return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam);
+}
