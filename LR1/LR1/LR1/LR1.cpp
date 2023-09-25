@@ -2,22 +2,34 @@
 #include <vector>
 #include <ctime>
 #include <string>
+//Эти строки подключают заголовочные файлы, необходимые для работы с Windows API и стандартной библиотекой C++.
+
 
 #define MAX_LOADSTRING 100
 #define IDS_APP_TITLE 101
+//Здесь определены макросы, которые используются позже в коде для задания максимальной длины строки и идентификатора для заголовка приложения.
 
 HINSTANCE hInst;
 HWND hWnd;
 HWND hRestartButton; // Добавлено окно кнопки рестарта
+//Эти переменные хранят информацию о текущем экземпляре приложения(hInst), о главном окне приложения(hWnd) и о кнопке рестарта(hRestartButton).
+
 const int gridSize = 20;
 int width = 20; // Ширина и высота поля
 int height = 15;
+//Здесь определены константы для размера сетки и размера поля игры в клетках.
+
 std::vector<POINT> snake;
 POINT food;
+//Эти переменные хранят информацию о положении змейки (snake) и еде (food) на поле игры.
+
 int directionX = 1;
 int directionY = 0;
+//Эти переменные определяют направление движения змейки по осям X и Y.Например, (1, 0) означает движение вправо, (-1, 0) - влево, (0, 1) - вниз, и(0, -1) - вверх.
+
 bool gameOver = false;
 int foodCount = 0;
+//Переменные gameOver и foodCount используются для отслеживания состояния игры: завершена ли она и сколько еды съела змейка.
 
 ATOM MyRegisterClass(HINSTANCE hInstance);
 BOOL InitInstance(HINSTANCE, int);
@@ -26,15 +38,17 @@ void UpdateGame();
 void DrawGame(HDC hdc);
 void CreateFood();
 void RestartGame(); // Добавлена функция перезапуска игры
+//Это прототипы функций, которые будут определены позже в коде. Они включают в себя регистрацию класса окна, инициализацию экземпляра приложения, обработчик оконных сообщений (WndProc), обновление игры, отрисовку игры, создание еды и функцию перезапуска игры.
 
-// Глобальные переменные для хранения хука
 HHOOK g_hKeyboardHook = NULL;
+//Эта переменная будет использоваться для хранения информации о глобальном хуке клавиш.
 
-// Прототип функции-обработчика клавиш
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
+//Это прототип функции, которая будет использоваться как обработчик глобального хука клавиш.
 
 // Глобальная переменная для хранения хендла окна сообщения
 HWND g_hMessageBox = NULL;
+//Эта переменная будет хранить хендл окна сообщения, которое будет отображаться в игре.
 
 void ShowNotification(LPCWSTR message) {
     // Получить размер экрана
@@ -68,6 +82,7 @@ void CloseNotification() {
     }
 }
 
+//Это основная функция приложения, которая инициализирует приложение, регистрирует класс окна, создает окно, и входит в цикл обработки сообщений.
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow) {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
@@ -92,6 +107,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     return (int)msg.wParam;
 }
 
+//Эта функция регистрирует класс окна.
 ATOM MyRegisterClass(HINSTANCE hInstance) {
     WNDCLASSEXW wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
@@ -109,6 +125,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance) {
     return RegisterClassExW(&wcex);
 }
 
+//Эта функция инициализирует экземпляр приложения и создает главное окно.
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
     hInst = hInstance;
     WCHAR szTitle[MAX_LOADSTRING];
@@ -137,6 +154,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
     return TRUE;
 }
 
+//Это функция-обработчик оконных сообщений, которая обрабатывает события, такие как отрисовка окна, нажатия клавиш и другие.
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
     case WM_PAINT: {
@@ -317,7 +335,7 @@ void RestartGame() {
     }
 }
 
-// Обработчик клавиш
+//Это функция-обработчик глобального хука клавиш, которая позволяет реагировать на определенные клавиши, например, для рестарта игры.
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode == HC_ACTION) {
         if (wParam == WM_KEYDOWN) {
