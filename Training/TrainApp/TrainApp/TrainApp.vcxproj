@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{0dc5a0fc-9360-425a-9c0c-f9dcfb5f668f}</ProjectGuid>
-    <RootNamespace>LR1</RootNamespace>
+    <ProjectGuid>{d7b2237c-2087-40b6-95f9-77126f060607}</ProjectGuid>
+    <RootNamespace>TrainApp</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -128,20 +128,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
-    <ClInclude Include="global_defines.h" />
-    <ClInclude Include="LR1.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="TrainApp.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LR1.cpp" />
+    <ClCompile Include="TrainApp.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="LR1.rc" />
+    <ResourceCompile Include="TrainApp.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="LR1.ico" />
     <Image Include="small.ico" />
+    <Image Include="TrainApp.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

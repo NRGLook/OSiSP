@@ -24,20 +24,17 @@
     <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LR1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="global_defines.h">
+    <ClInclude Include="TrainApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LR1.cpp">
+    <ClCompile Include="TrainApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="LR1.rc">
+    <ResourceCompile Include="TrainApp.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
@@ -45,7 +42,7 @@
     <Image Include="small.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="LR1.ico">
+    <Image Include="TrainApp.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

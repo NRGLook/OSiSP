@@ -2,12 +2,8 @@
 #include <vector>
 #include <ctime>
 #include <string>
+#include "global_defines.h"
 //Эти строки подключают заголовочные файлы, необходимые для работы с Windows API и стандартной библиотекой C++.
-
-
-#define MAX_LOADSTRING 100
-#define IDS_APP_TITLE 101
-//Здесь определены макросы, которые используются позже в коде для задания максимальной длины строки и идентификатора для заголовка приложения.
 
 HINSTANCE hInst;
 HWND hWnd;
@@ -50,6 +46,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 HWND g_hMessageBox = NULL;
 //Эта переменная будет хранить хендл окна сообщения, которое будет отображаться в игре.
 
+
 void ShowNotification(LPCWSTR message) {
     // Получить размер экрана
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -72,7 +69,6 @@ void ShowNotification(LPCWSTR message) {
     SendMessage(g_hMessageBox, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), MAKELPARAM(TRUE, 0));
     SendMessage(g_hMessageBox, STM_SETIMAGE, IMAGE_ICON, (LPARAM)LoadIcon(NULL, IDI_INFORMATION));
 }
-
 
 
 void CloseNotification() {
@@ -213,7 +209,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             RestartGame();
             break;
         case 2: // Обработка сообщений от кнопки Help
-            MessageBox(hWnd, L"Game Rules:\n- Snake control: Arrows:\n*Left\n*Up\n*Right\n*Down\n- Collect red squares (apples) to grow\n- Avoid collisions with screen boundaries and yourself", L"Help", MB_OK | MB_ICONINFORMATION);
+            MessageBox(hWnd, L"Game Rules:\n\nSnake control: Arrows:\n← Left\n↑ Up\n→ Right\n↓ Down\n\nCollect red squares (apples) to grow\n\nAvoid collisions with screen boundaries and yourself", L"Help", MB_OK | MB_ICONINFORMATION);
             break;
         }
         break;
@@ -241,7 +237,7 @@ void UpdateGame() {
         SetWindowText(hWnd, szTitle);
 
         if (foodCount % 5 == 0) {
-            ShowNotification(L"Congratulations! You are get 5 apples!");
+            ShowNotification(L"Congratulations! You have  5 apples!");
         }
     }
     else {
@@ -315,6 +311,22 @@ void DrawGame(HDC hdc) {
     rect.right = rect.left + gridSize;
     rect.bottom = rect.top + gridSize;
     FillRect(hdc, &rect, redBrush);
+
+    /*
+    for (const auto& segment : snake) {
+        int x = gameAreaLeft + segment.x * gridSize + gridSize / 2; // Центр круга по X
+        int y = gameAreaTop + segment.y * gridSize + gridSize / 2; // Центр круга по Y
+        int radius = gridSize / 2; // Радиус круга
+        HBRUSH brush = greenBrush; // Зеленый цвет для змеи
+        Ellipse(hdc, x - radius, y - radius, x + radius, y + radius);
+    }
+
+    int x = gameAreaLeft + food.x * gridSize + gridSize / 2; // Центр круга по X
+    int y = gameAreaTop + food.y * gridSize + gridSize / 2; // Центр круга по Y
+    int radius = gridSize / 2; // Радиус круга
+    HBRUSH brush = redBrush; // Красный цвет для яблока
+    Ellipse(hdc, x - radius, y - radius, x + radius, y + radius);
+    */
 
     DeleteObject(greenBrush);
     DeleteObject(redBrush);
