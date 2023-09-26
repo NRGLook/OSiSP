@@ -65,8 +65,8 @@ void ShowNotification(LPCWSTR message) {
     g_hMessageBox = CreateWindow(L"STATIC", message, WS_POPUP | WS_VISIBLE | SS_CENTER | WS_BORDER | MB_TOPMOST,
         notificationX, notificationY, notificationWidth, notificationHeight, hWnd, NULL, hInst, NULL);
 
-    // Установка таймера для закрытия окна через 4 секунды
-    SetTimer(hWnd, 2, 400, NULL);
+    // Установка таймера для закрытия окна через 5 секунды
+    SetTimer(hWnd, 2, 500, NULL);
 
     // Центрирование текста в окне сообщения
     SendMessage(g_hMessageBox, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), MAKELPARAM(TRUE, 0));
@@ -146,7 +146,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
     CreateFood();
 
     // Создание кнопки рестарта
-    hRestartButton = CreateWindow(L"BUTTON", L"Restart", WS_CHILD | WS_VISIBLE, 10, 10, 100, 30, hWnd, (HMENU)1, hInstance, NULL);
+    hRestartButton = CreateWindow(L"BUTTON", L"Restart", WS_CHILD | WS_VISIBLE, 50, 10, 100, 30, hWnd, (HMENU)1, hInstance, NULL);
+
+    // Создание кнопки Help
+    CreateWindow(L"BUTTON", L"Help", WS_CHILD | WS_VISIBLE, 50, 50, 100, 30, hWnd, (HMENU)2, hInstance, NULL);
 
     // Установка глобального хука на клавиши
     g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, GetModuleHandle(NULL), 0);
@@ -204,9 +207,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             UpdateGame();
         }
         break;
-    case WM_COMMAND: // Обработка сообщений от кнопки рестарта
-        if (LOWORD(wParam) == 1) {
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case 1: // Обработка сообщений от кнопки рестарта
             RestartGame();
+            break;
+        case 2: // Обработка сообщений от кнопки Help
+            MessageBox(hWnd, L"Game Rules:\n- Snake control: Arrows:\n*Left\n*Up\n*Right\n*Down\n- Collect red squares (apples) to grow\n- Avoid collisions with screen boundaries and yourself", L"Help", MB_OK | MB_ICONINFORMATION);
+            break;
         }
         break;
     case WM_CLOSE: // Обработка закрытия окна
@@ -233,7 +241,7 @@ void UpdateGame() {
         SetWindowText(hWnd, szTitle);
 
         if (foodCount % 5 == 0) {
-            ShowNotification(L"Поздравляем! Вы собрали 5 яблок!");
+            ShowNotification(L"Congratulations! You are get 5 apples!");
         }
     }
     else {
@@ -260,8 +268,9 @@ void UpdateGame() {
 void DrawGame(HDC hdc) {
     HBRUSH greenBrush = CreateSolidBrush(RGB(0, 128, 0));
     HBRUSH redBrush = CreateSolidBrush(RGB(255, 0, 0));
+//  HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255)); // Создание кисти с белым цветом - для змеи
     HBRUSH borderBrush = CreateSolidBrush(RGB(0, 0, 0)); // Цвет границы
-    HBRUSH backgroundBrush = CreateSolidBrush(RGB(0, 255, 0)); // Цвет заднего фона за границей
+    HBRUSH backgroundBrush = CreateSolidBrush(RGB(255, 255, 255)); // Цвет заднего фона за границей
 
     RECT rect;
     GetClientRect(hWnd, &rect);
@@ -311,6 +320,7 @@ void DrawGame(HDC hdc) {
     DeleteObject(redBrush);
     DeleteObject(borderBrush);
     DeleteObject(backgroundBrush);
+//  DeleteObject(whiteBrush); // Освобождение кисти
 }
 
 void CreateFood() {
@@ -318,6 +328,7 @@ void CreateFood() {
     food.x = rand() % width;
     food.y = rand() % height;
 }
+
 
 void RestartGame() {
     if (gameOver) {
