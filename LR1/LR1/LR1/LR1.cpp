@@ -2,50 +2,121 @@
 #include <vector>
 #include <ctime>
 #include <string>
+
 #include "global_defines.h"
-//Эти строки подключают заголовочные файлы, необходимые для работы с Windows API и стандартной библиотекой C++.
 
-HINSTANCE hInst;
-HWND hWnd;
-HWND hRestartButton; // Добавлено окно кнопки рестарта
 //Эти переменные хранят информацию о текущем экземпляре приложения(hInst), о главном окне приложения(hWnd) и о кнопке рестарта(hRestartButton).
+HINSTANCE hInst;//Хранит информацию о текущем экземпляре приложения
+HWND hWnd;//Хранит хендл (дескриптор) главного окна приложения
+HWND hRestartButton;//Хранит хендл кнопки "Restart"
+//HBITMAP pattern;
 
-const int gridSize = 20;
-int width = 20; // Ширина и высота поля
-int height = 15;
 //Здесь определены константы для размера сетки и размера поля игры в клетках.
+const int gridSize = 20;//Константа, определяющая размер клетки на игровом поле
+int width = 20;
+int height = 15;
 
-std::vector<POINT> snake;
-POINT food;
 //Эти переменные хранят информацию о положении змейки (snake) и еде (food) на поле игры.
+std::vector<POINT> snake;//Вектор, хранящий координаты сегментов змейки
+POINT food;//Координаты еды на поле
 
+//Эти переменные определяют направление движения змейки по осям X и Y.Например, (1, 0) означает движение вправо, (-1, 0) - влево, (0, 1) - вниз, и(0, -1) - вверх.
 int directionX = 1;
 int directionY = 0;
-//Эти переменные определяют направление движения змейки по осям X и Y.Например, (1, 0) означает движение вправо, (-1, 0) - влево, (0, 1) - вниз, и(0, -1) - вверх.
 
+//Переменные gameOver и foodCount используются для отслеживания состояния игры: завершена ли она и сколько еды съела змейка.
 bool gameOver = false;
 int foodCount = 0;
-//Переменные gameOver и foodCount используются для отслеживания состояния игры: завершена ли она и сколько еды съела змейка.
 
-ATOM MyRegisterClass(HINSTANCE hInstance);
-BOOL InitInstance(HINSTANCE, int);
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+//Это прототипы функций, которые будут определены позже в коде. Они включают в себя регистрацию класса окна, инициализацию экземпляра приложения, обработчик оконных сообщений (WndProc), обновление игры, отрисовку игры, создание еды и функцию перезапуска игры.
+ATOM MyRegisterClass(HINSTANCE hInstance);//Прототип функции регистрации класса окна
+BOOL InitInstance(HINSTANCE, int);//Прототип функции инициализации экземпляра приложения и создания главного окна
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);//Прототип функции обработки оконных сообщений
 void UpdateGame();
 void DrawGame(HDC hdc);
 void CreateFood();
-void RestartGame(); // Добавлена функция перезапуска игры
-//Это прототипы функций, которые будут определены позже в коде. Они включают в себя регистрацию класса окна, инициализацию экземпляра приложения, обработчик оконных сообщений (WndProc), обновление игры, отрисовку игры, создание еды и функцию перезапуска игры.
+void RestartGame();
 
-HHOOK g_hKeyboardHook = NULL;
 //Эта переменная будет использоваться для хранения информации о глобальном хуке клавиш.
+HHOOK g_hKeyboardHook = NULL;
 
-LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 //Это прототип функции, которая будет использоваться как обработчик глобального хука клавиш.
+LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 
-// Глобальная переменная для хранения хендла окна сообщения
+// Глобальная переменная для хранения хендла окна сообщения, которое будет отображаться в игре.
 HWND g_hMessageBox = NULL;
-//Эта переменная будет хранить хендл окна сообщения, которое будет отображаться в игре.
 
+
+/*
+// Вспомогательная функция для сохранения данных в файл
+bool SaveGameToFile(const std::wstring& filename) {
+    std::ofstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        std::wcerr << L"Ошибка: Не удалось открыть файл для записи." << std::endl;
+        return false;
+    }
+
+    // Сохраните данные игры, например, состояние змейки и позицию еды, в файл
+    // Здесь вы можете добавить код для сохранения данных вашей игры
+
+    file.close();
+    return true;
+}
+
+// Вспомогательная функция для загрузки данных из файла
+bool LoadGameFromFile(const std::wstring& filename) {
+    std::ifstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        std::wcerr << L"Ошибка: Не удалось открыть файл для чтения." << std::endl;
+        return false;
+    }
+
+    // Загрузите данные игры из файла и восстановите состояние змейки и позицию еды
+    // Здесь вы можете добавить код для загрузки данных вашей игры
+
+    file.close();
+    return true;
+}
+
+// Функция для асинхронного чтения данных из файла (пример)
+void AsyncReadFile(const std::wstring& filename) {
+    // Инициируйте асинхронное чтение данных из файла и обработайте результат
+    // Здесь вы можете добавить код для асинхронного чтения данных из файла вашей игры
+
+    std::wcout << L"Асинхронное чтение файла: " << filename << std::endl;
+}
+
+// Функция для отображения файла в память (пример)
+void MapFileToMemory(const std::wstring& filename) {
+    HANDLE hFile = CreateFileW(filename.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        std::wcerr << L"Ошибка: Не удалось открыть файл для отображения в память." << std::endl;
+        return;
+    }
+
+    HANDLE hMapFile = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    if (hMapFile == NULL) {
+        CloseHandle(hFile);
+        std::wcerr << L"Ошибка: Не удалось создать отображение файла в памяти." << std::endl;
+        return;
+    }
+
+    LPVOID pData = MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 0);
+    if (pData == NULL) {
+        CloseHandle(hMapFile);
+        CloseHandle(hFile);
+        std::wcerr << L"Ошибка: Не удалось отобразить файл в памяти." << std::endl;
+        return;
+    }
+
+    // Теперь у вас есть доступ к данным файла через pData
+    // Здесь вы можете добавить код для работы с данными из отображенного файла вашей игры
+
+    UnmapViewOfFile(pData);
+    CloseHandle(hMapFile);
+    CloseHandle(hFile);
+}
+*/
 
 void ShowNotification(LPCWSTR message) {
     // Получить размер экрана
@@ -78,6 +149,7 @@ void CloseNotification() {
     }
 }
 
+//Это точка входа в приложение, где инициализируются глобальные переменные, регистрируется класс окна и запускается цикл обработки сообщений
 //Это основная функция приложения, которая инициализирует приложение, регистрирует класс окна, создает окно, и входит в цикл обработки сообщений.
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow) {
     UNREFERENCED_PARAMETER(hPrevInstance);
@@ -103,6 +175,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     return (int)msg.wParam;
 }
 
+//Когда вы регистрируете класс окна, Windows возвращает значение типа ATOM, которое представляет собой уникальный идентификатор зарегистрированного класса.
 //Эта функция регистрирует класс окна.
 ATOM MyRegisterClass(HINSTANCE hInstance) {
     WNDCLASSEXW wcex;
@@ -124,6 +197,9 @@ ATOM MyRegisterClass(HINSTANCE hInstance) {
 //Эта функция инициализирует экземпляр приложения и создает главное окно.
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
     hInst = hInstance;
+
+    //pattern = LoadBitmap(hInst, MAKEINTRESOURCE(IDB_BITMAP1));
+
     WCHAR szTitle[MAX_LOADSTRING];
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     hWnd = CreateWindow(L"SnakeGame", szTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
@@ -159,6 +235,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
+
+        //rendering mode
+        //create picture
+        //HBRUSH newBrush = CreatePatternBrush(pattern);
+        //BITMAP pattern;
+        //GetObject(pattern, sizeof(BITMAP), &patternObject);
+        //create time context
+        //HDC memDC = CreateCompatibleDC(hds);
+        //SelectObject(memDC, kitty);
+        //BitBlt
+        //  (hdc,30,50,kittyObject.bnWidth, kittyObject.bmHeight,memDC,0,0,SRCCOPY)//copy to 1 to 2 pixecls
+        //StretchBlt...
+        //DeleteDC(memDC)
+
         DrawGame(hdc);
         EndPaint(hWnd, &ps);
     }
@@ -264,7 +354,7 @@ void UpdateGame() {
 void DrawGame(HDC hdc) {
     HBRUSH greenBrush = CreateSolidBrush(RGB(0, 128, 0));
     HBRUSH redBrush = CreateSolidBrush(RGB(255, 0, 0));
-//  HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255)); // Создание кисти с белым цветом - для змеи
+    //HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255)); // Создание кисти с белым цветом - для змеи
     HBRUSH borderBrush = CreateSolidBrush(RGB(0, 0, 0)); // Цвет границы
     HBRUSH backgroundBrush = CreateSolidBrush(RGB(255, 255, 255)); // Цвет заднего фона за границей
 
@@ -298,6 +388,7 @@ void DrawGame(HDC hdc) {
         LineTo(hdc, gameAreaRight + borderSize, y);
     }
 
+    
     for (const auto& segment : snake) {
         rect.left = gameAreaLeft + segment.x * gridSize;
         rect.top = gameAreaTop + segment.y * gridSize;
