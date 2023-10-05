@@ -492,6 +492,9 @@ void SaveGameAsync();
 // Объявление функции RestartGame
 void RestartGame();
 
+LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
+
+
 struct SnakeSegment {
     int x, y;
     SnakeSegment() : x(0), y(0) {} // Конструктор по умолчанию
@@ -551,9 +554,6 @@ void HandleInput(WPARAM wParam) {
         break;
     case 'L':
         LoadGameAsync();
-        break;
-    case 'R':
-        RestartGame();
         break;
     }
 }
@@ -691,7 +691,9 @@ void RestartGame() {
     direction = 1;
     gameOver = false;
     foodEaten = 0;
+    InvalidateRect(hWnd, NULL, TRUE); // Добавляем это для перерисовки экрана
 }
+
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
@@ -822,3 +824,4 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     }
     return CallNextHookEx(g_hook, nCode, wParam, lParam);
 }
+
