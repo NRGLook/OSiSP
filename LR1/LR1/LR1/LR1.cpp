@@ -469,17 +469,18 @@
 #include <thread>
 #include <mutex>
 #include <string>
+#include "global_defines.h"
 
 using namespace std;
 
-#define IDC_RESTART_BUTTON 101
+
 
 const int gridSize = 25;
 
 const int screenWidth = 1100;
 const int screenHeight = 800;
 
-const wchar_t* saveFileName = L"snake_save.txt";
+const wchar_t* saveFileName = L"D:\\Study\\OSiSP\\LR1\\LR1\\snake_save.txt";
 
 HWND hWnd; // Хранит хендл (дескриптор) главного окна приложения
 HWND restartButton; // Хендл кнопки перезапуска игры
@@ -649,30 +650,65 @@ void PaintGame(HDC hdc) {
     }
 }
 
+//in binary format
+
+//void SaveGameAsync() {
+//    lock_guard<mutex> lock(snakeMutex);
+//    ofstream file(saveFileName, ios::binary); // Открываем файл в бинарном режиме
+//    if (file.is_open()) {
+//        int size = snake.size();
+//        file.write(reinterpret_cast<char*>(&size), sizeof(size)); // Записываем размер змейки
+//
+//        for (const SnakeSegment& segment : snake) {
+//            file.write(reinterpret_cast<const char*>(&segment), sizeof(SnakeSegment)); // Записываем каждый сегмент змейки
+//        }
+//        file.close();
+//    }
+//}
+//
+//void LoadGameAsync() {
+//    ifstream file(saveFileName, ios::binary); // Открываем файл в бинарном режиме
+//    if (file.is_open()) {
+//        int size;
+//        file.read(reinterpret_cast<char*>(&size), sizeof(size)); // Читаем размер змейки
+//
+//        deque<SnakeSegment> newSnake;
+//        for (int i = 0; i < size; i++) {
+//            SnakeSegment segment;
+//            file.read(reinterpret_cast<char*>(&segment), sizeof(SnakeSegment)); // Читаем каждый сегмент змейки
+//            newSnake.push_back(segment);
+//        }
+//        file.close();
+//
+//        lock_guard<mutex> lock(snakeMutex);
+//        snake = newSnake;
+//    }
+//}
+
+
 void SaveGameAsync() {
     lock_guard<mutex> lock(snakeMutex);
-    ofstream file(saveFileName, ios::binary); // Открываем файл в бинарном режиме
+    ofstream file(saveFileName); // Открываем файл в текстовом режиме
     if (file.is_open()) {
-        int size = snake.size();
-        file.write(reinterpret_cast<char*>(&size), sizeof(size)); // Записываем размер змейки
-
+        file << snake.size() << endl; // Записываем размер змейки
         for (const SnakeSegment& segment : snake) {
-            file.write(reinterpret_cast<const char*>(&segment), sizeof(SnakeSegment)); // Записываем каждый сегмент змейки
+            file << segment.x << "," << segment.y << endl; // Записываем каждый сегмент змейки
         }
         file.close();
     }
 }
 
 void LoadGameAsync() {
-    ifstream file(saveFileName, ios::binary); // Открываем файл в бинарном режиме
+    ifstream file(saveFileName); // Открываем файл в текстовом режиме
     if (file.is_open()) {
         int size;
-        file.read(reinterpret_cast<char*>(&size), sizeof(size)); // Читаем размер змейки
+        file >> size; // Читаем размер змейки
 
         deque<SnakeSegment> newSnake;
         for (int i = 0; i < size; i++) {
             SnakeSegment segment;
-            file.read(reinterpret_cast<char*>(&segment), sizeof(SnakeSegment)); // Читаем каждый сегмент змейки
+            char comma;
+            file >> segment.x >> comma >> segment.y; // Читаем каждый сегмент змейки
             newSnake.push_back(segment);
         }
         file.close();
@@ -681,6 +717,7 @@ void LoadGameAsync() {
         snake = newSnake;
     }
 }
+
 
 void RestartGame() {
     lock_guard<mutex> lock(snakeMutex);
