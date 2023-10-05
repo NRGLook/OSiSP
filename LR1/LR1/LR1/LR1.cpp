@@ -499,6 +499,480 @@
 //        snake = newSnake;
 //    }
 //}
+//#include <windows.h>
+//#include <deque>
+//#include <fstream>
+//#include <thread>
+//#include <mutex>
+//#include <string>
+//#include "global_defines.h"
+//
+//using namespace std;
+//
+//const int gridSize = 25;
+//
+//const int screenWidth = 1100;
+//const int screenHeight = 800;
+//
+//const wchar_t* saveFileName = L"D:\\Study\\OSiSP\\LR1\\LR1\\snake_save.txt";
+//
+//HWND hWnd; // Хранит хендл (дескриптор) главного окна приложения
+//HWND restartButton; // Хендл кнопки перезапуска игры
+//HHOOK g_hook = NULL; // Хендл глобального хука
+//
+//// Объявление функций SaveGameAsync и LoadGameAsync
+//void SaveGameAsync();
+//void LoadGameAsync();
+//void RestartGame();
+//
+//// Добавляем функции для управления памятью с помощью API Win32
+//void* AllocateMemory(size_t size);
+//void FreeMemory(void* ptr);
+//
+//// Добавляем функции для работы с файлами с использованием API Win32
+//bool ReadDataFromFile(const wchar_t* fileName, void* buffer, DWORD bufferSize);
+//bool WriteDataToFile(const wchar_t* fileName, const void* data, DWORD dataSize);
+//
+//LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
+//
+//struct SnakeSegment {
+//    int x, y;
+//    SnakeSegment() : x(0), y(0) {} // Конструктор по умолчанию
+//    SnakeSegment(int _x, int _y) : x(_x), y(_y) {}
+//};
+//
+//deque<SnakeSegment> snake;
+//int foodX, foodY;
+//bool gameOver = false;
+//int direction = 1; // 0 - влево, 1 - вверх, 2 - вправо, 3 - вниз
+//int foodEaten = 0; // Счетчик съеденной еды
+//
+//mutex snakeMutex; // Мьютекс для защиты доступа к змейке
+//
+//void DrawCell(HDC hdc, int x, int y, COLORREF color) {
+//    int cellWidth = screenWidth / gridSize;
+//    int cellHeight = screenHeight / gridSize;
+//
+//    // Создаем кисть с заданным цветом
+//    HBRUSH brush = CreateSolidBrush(color);
+//    // Задаем цвет для контура ячейки
+//    HPEN pen = CreatePen(PS_SOLID, 1, color);
+//
+//    // Выбираем кисть и перо в контексте устройства
+//    HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, brush);
+//    HPEN oldPen = (HPEN)SelectObject(hdc, pen);
+//
+//    // Рисуем прямоугольник
+//    Rectangle(hdc, x * cellWidth, y * cellHeight, (x + 1) * cellWidth, (y + 1) * cellHeight);
+//
+//    // Восстанавливаем оригинальные кисть и перо
+//    SelectObject(hdc, oldBrush);
+//    SelectObject(hdc, oldPen);
+//
+//    // Удаляем созданные кисть и перо
+//    DeleteObject(brush);
+//    DeleteObject(pen);
+//}
+//
+//// Функция обработки нажатия клавиш
+//void HandleInput(WPARAM wParam) {
+//    switch (wParam) {
+//    case VK_LEFT:
+//        if (direction != 2) direction = 0;
+//        break;
+//    case VK_UP:
+//        if (direction != 3) direction = 1;
+//        break;
+//    case VK_RIGHT:
+//        if (direction != 0) direction = 2;
+//        break;
+//    case VK_DOWN:
+//        if (direction != 1) direction = 3;
+//        break;
+//    case 'S':
+//        SaveGameAsync();
+//        break;
+//    case 'L':
+//        LoadGameAsync();
+//        break;
+//    }
+//}
+//
+//// Функция обновления игры
+//void UpdateGame(HWND hWnd) {
+//    // Обновляем позицию змейки в зависимости от направления
+//    int headX = snake.front().x;
+//    int headY = snake.front().y;
+//
+//    switch (direction) {
+//    case 0: // Влево
+//        headX--;
+//        break;
+//    case 1: // Вверх
+//        headY--;
+//        break;
+//    case 2: // Вправо
+//        headX++;
+//        break;
+//    case 3: // Вниз
+//        headY++;
+//        break;
+//    }
+//
+//    // Проверяем столкновение с границей экрана
+//    if (headX < 0 || headX >= screenWidth / gridSize || headY < 0 || headY >= screenHeight / gridSize) {
+//        gameOver = true;
+//        return;
+//    }
+//
+//    // Проверяем столкновение с самой собой
+//    lock_guard<mutex> lock(snakeMutex);
+//    for (const SnakeSegment& segment : snake) {
+//        if (segment.x == headX && segment.y == headY) {
+//            gameOver = true;
+//            return;
+//        }
+//    }
+//
+//    // Проверяем, съела ли змейка еду
+//    if (headX == foodX && headY == foodY) {
+//        // Генерируем новую позицию для еды
+//        foodX = rand() % (screenWidth / gridSize);
+//        foodY = rand() % (screenHeight / gridSize);
+//        foodEaten++; // Увеличиваем счетчик съеденной еды
+//
+//        // Проверяем, сколько яблок съедено, и выводим уведомление каждые 5 яблок
+//        if (foodEaten % 5 == 0) {
+//            MessageBox(hWnd, L"Вы съели 5 яблок!", L"Уведомление", MB_OK | MB_ICONINFORMATION);
+//        }
+//    }
+//    else {
+//        // Удаляем хвост змейки
+//        snake.pop_back();
+//    }
+//
+//    // Добавляем новую голову
+//    snake.push_front(SnakeSegment(headX, headY));
+//
+//    // Обновляем экран
+//    InvalidateRect(hWnd, NULL, TRUE);
+//}
+//
+//void PaintGame(HDC hdc) {
+//    // Очищаем экран и рисуем фон зеленым цветом
+//    RECT clientRect;
+//    GetClientRect(hWnd, &clientRect);
+//    HBRUSH greenBrush = CreateSolidBrush(RGB(0, 255, 0)); // Зеленый цвет для фона
+//    FillRect(hdc, &clientRect, greenBrush);
+//    DeleteObject(greenBrush);
+//
+//    // Отображаем счетчик съеденной еды
+//    wstring foodEatenText = L"Eat: " + to_wstring(foodEaten);
+//    TextOut(hdc, 10, 10, foodEatenText.c_str(), foodEatenText.length());
+//
+//    // Рисуем еду красным цветом
+//    SetBkColor(hdc, RGB(0, 255, 0)); // Задаем зеленый цвет текста (фона текста)
+//    SetTextColor(hdc, RGB(0, 0, 0)); // Задаем черный цвет текста
+//    DrawCell(hdc, foodX, foodY, RGB(255, 0, 0)); // Красный цвет для еды
+//
+//    // Рисуем змейку черным цветом
+//    SetBkColor(hdc, RGB(0, 255, 0)); // Задаем зеленый цвет текста (фона текста)
+//    SetTextColor(hdc, RGB(0, 0, 0)); // Задаем черный цвет текста
+//    lock_guard<mutex> lock(snakeMutex);
+//    for (const SnakeSegment& segment : snake) {
+//        DrawCell(hdc, segment.x, segment.y, RGB(0, 0, 0)); // Черный цвет для змейки
+//    }
+//
+//    if (gameOver) {
+//        // Выводим сообщение об окончании игры
+//        TextOut(hdc, 10, 30, L"Game Over", 9);
+//    }
+//}
+//
+//// Функция для выделения динамической памяти с использованием VirtualAlloc
+//void* AllocateMemory(size_t size) {
+//    return VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+//}
+//
+//// Функция для освобождения динамической памяти с использованием VirtualFree
+//void FreeMemory(void* ptr) {
+//    VirtualFree(ptr, 0, MEM_RELEASE);
+//}
+//
+//// Функция для чтения данных из файла с использованием API Win32
+//bool ReadDataFromFile(const wchar_t* fileName, void* buffer, DWORD bufferSize) {
+//    HANDLE hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+//    if (hFile == INVALID_HANDLE_VALUE) {
+//        return false;
+//    }
+//
+//    DWORD bytesRead;
+//    BOOL result = ReadFile(hFile, buffer, bufferSize, &bytesRead, NULL);
+//    CloseHandle(hFile);
+//
+//    return (result != 0);
+//}
+//
+//// Функция для записи данных в файл с использованием API Win32
+//bool WriteDataToFile(const wchar_t* fileName, const void* data, DWORD dataSize) {
+//    HANDLE hFile = CreateFile(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+//    if (hFile == INVALID_HANDLE_VALUE) {
+//        return false;
+//    }
+//
+//    DWORD bytesWritten;
+//    BOOL result = WriteFile(hFile, data, dataSize, &bytesWritten, NULL);
+//    CloseHandle(hFile);
+//
+//    return (result != 0);
+//}
+//
+//void SaveGameAsync() {
+//    lock_guard<mutex> lock(snakeMutex);
+//    // Определяем размер данных для сохранения
+//    size_t dataSize = sizeof(int) + snake.size() * sizeof(SnakeSegment);
+//    // Выделяем память для буфера
+//    void* buffer = AllocateMemory(dataSize);
+//    if (buffer == NULL) {
+//        return; // Ошибка выделения памяти
+//    }
+//
+//    // Записываем размер данных в начало буфера
+//    int* dataSizePtr = static_cast<int*>(buffer);
+//    *dataSizePtr = static_cast<int>(snake.size());
+//
+//    // Копируем данные о змейке в буфер
+//    SnakeSegment* snakeDataPtr = reinterpret_cast<SnakeSegment*>(dataSizePtr + 1);
+//    for (const SnakeSegment& segment : snake) {
+//        *snakeDataPtr++ = segment;
+//    }
+//
+//    // Записываем буфер в файл
+//    if (!WriteDataToFile(saveFileName, buffer, static_cast<DWORD>(dataSize))) {
+//        // Обработка ошибки записи
+//    }
+//
+//    // Освобождаем память
+//    FreeMemory(buffer);
+//}
+//
+//void LoadGameAsync() {
+//    // Читаем данные из файла
+//    size_t dataSize;
+//    if (!ReadDataFromFile(saveFileName, &dataSize, sizeof(size_t))) {
+//        // Обработка ошибки чтения
+//        return;
+//    }
+//
+//    // Проверяем, есть ли сохраненные данные
+//    if (dataSize == 0) {
+//        // Нет данных для загрузки
+//        return;
+//    }
+//
+//    // Выделяем память для буфера
+//    void* buffer = AllocateMemory(dataSize);
+//    if (buffer == NULL) {
+//        // Обработка ошибки выделения памяти
+//        return;
+//    }
+//
+//    // Читаем данные из файла
+//    if (!ReadDataFromFile(saveFileName, buffer, static_cast<DWORD>(dataSize))) {
+//        // Обработка ошибки чтения
+//        FreeMemory(buffer);
+//        return;
+//    }
+//
+//    // Преобразуем данные обратно в змейку
+//    int* dataSizePtr = static_cast<int*>(buffer);
+//    SnakeSegment* snakeDataPtr = reinterpret_cast<SnakeSegment*>(dataSizePtr + 1);
+//
+//    // Загружаем змейку
+//    lock_guard<mutex> lock(snakeMutex);
+//    snake.clear();
+//    for (int i = 0; i < *dataSizePtr; i++) {
+//        snake.push_back(*snakeDataPtr++);
+//    }
+//
+//    // Освобождаем память
+//    FreeMemory(buffer);
+//}
+//
+//LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+//    switch (message) {
+//    case WM_KEYDOWN:
+//        HandleInput(wParam);
+//        break;
+//    case WM_PAINT:
+//    {
+//        PAINTSTRUCT ps;
+//        HDC hdc = BeginPaint(hWnd, &ps);
+//        PaintGame(hdc);
+//        EndPaint(hWnd, &ps);
+//    }
+//    break;
+//    case WM_CLOSE:
+//        PostQuitMessage(0);
+//        break;
+//    case WM_TIMER:
+//        if (wParam == 1) {
+//            // Обновляйте состояние игры здесь, вызывая функцию UpdateGame
+//            UpdateGame(hWnd);
+//        }
+//        break;
+//
+//    default:
+//        return DefWindowProc(hWnd, message, wParam, lParam);
+//    }
+//    return 0;
+//}
+//
+//LRESULT CALLBACK RestartButtonProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+//    switch (message) {
+//    case WM_COMMAND:
+//        if (LOWORD(wParam) == IDC_RESTART_BUTTON) {
+//            // Нажата кнопка "Restart"
+//            RestartGame();
+//        }
+//        break;
+//    default:
+//        return DefWindowProc(hwnd, message, wParam, lParam);
+//    }
+//    return 0;
+//}
+//
+//void CreateRestartButton(HWND hWnd) {
+//    // Создаем кнопку "Restart"
+//    restartButton = CreateWindow(
+//        L"BUTTON",   // Класс окна
+//        L"Restart",  // Текст кнопки
+//        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Стиль окна
+//        10,           // Координата X
+//        50,           // Координата Y
+//        100,          // Ширина
+//        30,           // Высота
+//        hWnd,         // Родительское окно
+//        (HMENU)IDC_RESTART_BUTTON, // Идентификатор контрола
+//        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
+//        NULL);
+//
+//    if (restartButton == NULL) {
+//        // Обработка ошибки создания кнопки
+//    }
+//}
+//
+//void RestartGame() {
+//    // Очищаем змейку и сбрасываем параметры игры
+//    lock_guard<mutex> lock(snakeMutex);
+//    snake.clear();
+//    snake.push_back(SnakeSegment(gridSize / 2, gridSize / 2));
+//    direction = 1;
+//    gameOver = false;
+//    foodEaten = 0;
+//    foodX = rand() % (screenWidth / gridSize);
+//    foodY = rand() % (screenHeight / gridSize);
+//
+//    // Удаляем сообщение "Game Over", если оно было выведено
+//    HDC hdc = GetDC(hWnd);
+//    SetBkColor(hdc, RGB(0, 255, 0)); // Задаем зеленый цвет текста (фона текста)
+//    SetTextColor(hdc, RGB(0, 255, 0)); // Задаем зеленый цвет текста
+//    TextOut(hdc, 10, 30, L"Game Over", 9);
+//    ReleaseDC(hWnd, hdc);
+//
+//    // Обновляем экран
+//    InvalidateRect(hWnd, NULL, TRUE);
+//}
+//
+//int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+//    // Инициализация библиотеки COM
+//    CoInitialize(NULL);
+//
+//    // Регистрация класса окна
+//    WNDCLASSEX wcex;
+//    wcex.cbSize = sizeof(WNDCLASSEX);
+//    wcex.style = CS_HREDRAW | CS_VREDRAW;
+//    wcex.lpfnWndProc = WndProc;
+//    wcex.cbClsExtra = 0;
+//    wcex.cbWndExtra = 0;
+//    wcex.hInstance = hInstance;
+//    wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
+//    wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+//    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+//    wcex.lpszMenuName = NULL;
+//    wcex.lpszClassName = L"SnakeGame";
+//    wcex.hIconSm = LoadIcon(hInstance, IDI_APPLICATION);
+//    RegisterClassEx(&wcex);
+//
+//    // Создание окна приложения
+//    hWnd = CreateWindow(
+//        L"SnakeGame",             // Класс окна
+//        L"Snake Game",            // Заголовок окна
+//        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, // Стиль окна
+//        CW_USEDEFAULT,            // Позиция X
+//        CW_USEDEFAULT,            // Позиция Y
+//        screenWidth,              // Ширина окна
+//        screenHeight,             // Высота окна
+//        NULL,                     // Родительское окно
+//        NULL,                     // Меню окна
+//        hInstance,                // Дескриптор экземпляра приложения
+//        NULL);                    // Дополнительные параметры
+//
+//    if (!hWnd) {
+//        return FALSE;
+//    }
+//
+//    // Создаем таймер для обновления игры
+//    SetTimer(hWnd, 1, 100, NULL);
+//
+//    // Создаем кнопку "Restart"
+//    CreateRestartButton(hWnd);
+//
+//    // Регистрируем глобальный хук для перехвата клавиш
+//    g_hook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, hInstance, 0);
+//
+//    // Инициализация змейки
+//    snake.push_back(SnakeSegment(gridSize / 2, gridSize / 2));
+//
+//    // Генерация начального положения еды
+//    foodX = rand() % (screenWidth / gridSize);
+//    foodY = rand() % (screenHeight / gridSize);
+//
+//    // Отображение окна
+//    ShowWindow(hWnd, nCmdShow);
+//    UpdateWindow(hWnd);
+//
+//    // Основной цикл сообщений
+//    MSG msg;
+//    while (GetMessage(&msg, NULL, 0, 0)) {
+//        TranslateMessage(&msg);
+//        DispatchMessage(&msg);
+//    }
+//
+//    // Удаляем глобальный хук
+//    UnhookWindowsHookEx(g_hook);
+//
+//    // Выход из библиотеки COM
+//    CoUninitialize();
+//
+//    return (int)msg.wParam;
+//}
+//
+//LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+//    if (nCode >= 0 && wParam == WM_KEYDOWN) {
+//        KBDLLHOOKSTRUCT* pKbStruct = (KBDLLHOOKSTRUCT*)lParam;
+//        if (pKbStruct->vkCode == VK_F5) {
+//            // Нажата клавиша F5 - сохраняем игру
+//            SaveGameAsync();
+//        }
+//        else if (pKbStruct->vkCode == VK_F9) {
+//            // Нажата клавиша F9 - загружаем игру
+//            LoadGameAsync();
+//        }
+//    }
+//
+//    return CallNextHookEx(g_hook, nCode, wParam, lParam);
+//}
 
 
 
