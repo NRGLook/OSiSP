@@ -4,7 +4,10 @@
 #include <thread>
 #include <mutex>
 #include <string>
+#include <iostream>
+#include <fstream>
 #include "global_defines.h"
+
 
 using namespace std;
 
@@ -13,7 +16,7 @@ const int gridSize = 25;
 const int screenWidth = 1100;
 const int screenHeight = 800;
 
-const wchar_t* saveFileName = L"D:\\Study\\OSiSP\\LR1\\LR1\\snake_save.txt";
+const wchar_t* saveFileName = L"D:\\Study\\OSiSP\\LR1\\LR1\\snake_save.bin";
 
 HWND hWnd; // Хранит хендл (дескриптор) главного окна приложения
 HWND restartButton; // Хендл кнопки перезапуска игры
@@ -25,7 +28,6 @@ void LoadGameAsync();
 void SaveGameAsync();
 // Объявление функции RestartGame
 void RestartGame();
-
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 
 struct SnakeSegment {
@@ -34,14 +36,16 @@ struct SnakeSegment {
     SnakeSegment(int _x, int _y) : x(_x), y(_y) {}
 };
 
-deque<SnakeSegment> snake;
+deque<SnakeSegment> snake; //двусторонняя очередь
 int foodX, foodY;
 bool gameOver = false;
 int direction = 1; // 0 - влево, 1 - вверх, 2 - вправо, 3 - вниз
 int foodEaten = 0; // Счетчик съеденной еды
 
-mutex snakeMutex; // Мьютекс для защиты доступа к змейке
+// Это синхронизационный механизм, используемый для организации взаимного доступа нескольких потоков к общим ресурсам или критическим участкам кода таким образом, чтобы только один поток имел доступ к этим ресурсам или коду в определенный момент времени.
+mutex snakeMutex; // Мьютекс для защиты доступа к змейки в многопоточной среде
 
+//функция для отрисовки ячейки на экране с заданным цветом, для отображения змейки и еды на игровом поле
 void DrawCell(HDC hdc, int x, int y, COLORREF color) {
     int cellWidth = screenWidth / gridSize;
     int cellHeight = screenHeight / gridSize;
@@ -67,7 +71,7 @@ void DrawCell(HDC hdc, int x, int y, COLORREF color) {
     DeleteObject(pen);
 }
 
-// Функция обработки нажатия клавиш
+// Функция обработки нажатия клавиш - ввода пользователя
 void HandleInput(WPARAM wParam) {
     switch (wParam) {
     case VK_LEFT:
@@ -119,7 +123,8 @@ void UpdateGame(HWND hWnd) {
     }
 
     // Проверяем столкновение с самой собой
-    lock_guard<mutex> lock(snakeMutex);
+    lock_guard<mutex> lock(snakeMutex); // средство для автоматической блокировки и разблокировки мьютекса (или другого объекта семафора) в рамках области видимости 
+    // Когда объект lock_guard создается и инициализируется мьютексом, он захватывает этот мьютекс, блокируя его -> другие потоки не могут получить доступ к этому мьютексу, пока lock_guard существует и находится в области видимости. Когда lock_guard выходит из области видимости (например, при завершении функции или блока кода), он автоматически разблокирует мьютекс, позволяя другим потокам получить доступ к нему.
     for (const SnakeSegment& segment : snake) {
         if (segment.x == headX && segment.y == headY) {
             gameOver = true;
@@ -136,7 +141,7 @@ void UpdateGame(HWND hWnd) {
 
         // Проверяем, сколько яблок съедено, и выводим уведомление каждые 5 яблок
         if (foodEaten % 5 == 0) {
-            MessageBox(hWnd, L"Вы съели 5 яблок!", L"Уведомление", MB_OK | MB_ICONINFORMATION);
+            MessageBox(hWnd, L"You are get 5 apples!", L"Notification", MB_OK | MB_ICONINFORMATION);
         }
     }
     else {
@@ -182,29 +187,40 @@ void PaintGame(HDC hdc) {
     }
 }
 
+// функция для асинхронного сохранения состояния игры в файл
+// мьютекс для защиты доступа к данным змейки и записывает состояние в бинарном формате в файл
 void SaveGameAsync() {
     lock_guard<mutex> lock(snakeMutex);
-    ofstream file(saveFileName); // Открываем файл в текстовом режиме
+
+    // Открываем файл для записи в бинарном режиме
+    ofstream file(saveFileName, ios::binary);
     if (file.is_open()) {
-        file << snake.size() << endl; // Записываем размер змейки
+        int size = static_cast<int>(snake.size());
+
+        // Записываем размер змейки в файл
+        file.write(reinterpret_cast<char*>(&size), sizeof(int));
+
+        // Записываем данные о сегментах змейки в файл
         for (const SnakeSegment& segment : snake) {
-            file << segment.x << "," << segment.y << endl; // Записываем каждый сегмент змейки
+            file.write(reinterpret_cast<const char*>(&segment), sizeof(SnakeSegment));
         }
+
         file.close();
     }
 }
 
+// функция для асинхронной загрузки состояния игры из файла
+// использует мьютекс для защиты доступа к данным змейки и считывает состояние из файла
 void LoadGameAsync() {
-    ifstream file(saveFileName); // Открываем файл в текстовом режиме
+    ifstream file(saveFileName, ios::binary);
     if (file.is_open()) {
         int size;
-        file >> size; // Читаем размер змейки
+        file.read(reinterpret_cast<char*>(&size), sizeof(int));
 
         deque<SnakeSegment> newSnake;
         for (int i = 0; i < size; i++) {
             SnakeSegment segment;
-            char comma;
-            file >> segment.x >> comma >> segment.y; // Читаем каждый сегмент змейки
+            file.read(reinterpret_cast<char*>(&segment), sizeof(SnakeSegment));
             newSnake.push_back(segment);
         }
         file.close();
@@ -214,6 +230,7 @@ void LoadGameAsync() {
     }
 }
 
+// очищает данные о змейке, генерирует новую позицию для еды и сбрасывает счетчики
 void RestartGame() {
     lock_guard<mutex> lock(snakeMutex);
     snake.clear();
@@ -249,6 +266,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     return 0;
 }
 
+// обработчик сообщений для кнопки перезапуска игры
+// обрабатывает события, связанные с этой кнопкой
 LRESULT CALLBACK RestartButtonProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
     case WM_COMMAND:
@@ -346,6 +365,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     return (int)msg.wParam;
 }
 
+// обработчик глобального хука клавиш, который реагирует на нажатие клавиши "R" и вызывает функцию перезапуска игры
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode == HC_ACTION && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)) {
         KBDLLHOOKSTRUCT* pKB = (KBDLLHOOKSTRUCT*)lParam;
