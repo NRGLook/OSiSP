@@ -463,6 +463,45 @@
 //    }
 //    return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam);
 //}
+
+
+//in binary format
+
+//void SaveGameAsync() {
+//    lock_guard<mutex> lock(snakeMutex);
+//    ofstream file(saveFileName, ios::binary); // Открываем файл в бинарном режиме
+//    if (file.is_open()) {
+//        int size = snake.size();
+//        file.write(reinterpret_cast<char*>(&size), sizeof(size)); // Записываем размер змейки
+//
+//        for (const SnakeSegment& segment : snake) {
+//            file.write(reinterpret_cast<const char*>(&segment), sizeof(SnakeSegment)); // Записываем каждый сегмент змейки
+//        }
+//        file.close();
+//    }
+//}
+//
+//void LoadGameAsync() {
+//    ifstream file(saveFileName, ios::binary); // Открываем файл в бинарном режиме
+//    if (file.is_open()) {
+//        int size;
+//        file.read(reinterpret_cast<char*>(&size), sizeof(size)); // Читаем размер змейки
+//
+//        deque<SnakeSegment> newSnake;
+//        for (int i = 0; i < size; i++) {
+//            SnakeSegment segment;
+//            file.read(reinterpret_cast<char*>(&segment), sizeof(SnakeSegment)); // Читаем каждый сегмент змейки
+//            newSnake.push_back(segment);
+//        }
+//        file.close();
+//
+//        lock_guard<mutex> lock(snakeMutex);
+//        snake = newSnake;
+//    }
+//}
+
+
+
 #include <windows.h>
 #include <deque>
 #include <fstream>
@@ -472,8 +511,6 @@
 #include "global_defines.h"
 
 using namespace std;
-
-
 
 const int gridSize = 25;
 
@@ -494,7 +531,6 @@ void SaveGameAsync();
 void RestartGame();
 
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
-
 
 struct SnakeSegment {
     int x, y;
@@ -650,42 +686,6 @@ void PaintGame(HDC hdc) {
     }
 }
 
-//in binary format
-
-//void SaveGameAsync() {
-//    lock_guard<mutex> lock(snakeMutex);
-//    ofstream file(saveFileName, ios::binary); // Открываем файл в бинарном режиме
-//    if (file.is_open()) {
-//        int size = snake.size();
-//        file.write(reinterpret_cast<char*>(&size), sizeof(size)); // Записываем размер змейки
-//
-//        for (const SnakeSegment& segment : snake) {
-//            file.write(reinterpret_cast<const char*>(&segment), sizeof(SnakeSegment)); // Записываем каждый сегмент змейки
-//        }
-//        file.close();
-//    }
-//}
-//
-//void LoadGameAsync() {
-//    ifstream file(saveFileName, ios::binary); // Открываем файл в бинарном режиме
-//    if (file.is_open()) {
-//        int size;
-//        file.read(reinterpret_cast<char*>(&size), sizeof(size)); // Читаем размер змейки
-//
-//        deque<SnakeSegment> newSnake;
-//        for (int i = 0; i < size; i++) {
-//            SnakeSegment segment;
-//            file.read(reinterpret_cast<char*>(&segment), sizeof(SnakeSegment)); // Читаем каждый сегмент змейки
-//            newSnake.push_back(segment);
-//        }
-//        file.close();
-//
-//        lock_guard<mutex> lock(snakeMutex);
-//        snake = newSnake;
-//    }
-//}
-
-
 void SaveGameAsync() {
     lock_guard<mutex> lock(snakeMutex);
     ofstream file(saveFileName); // Открываем файл в текстовом режиме
@@ -718,7 +718,6 @@ void LoadGameAsync() {
     }
 }
 
-
 void RestartGame() {
     lock_guard<mutex> lock(snakeMutex);
     snake.clear();
@@ -730,7 +729,6 @@ void RestartGame() {
     foodEaten = 0;
     InvalidateRect(hWnd, NULL, TRUE); // Добавляем это для перерисовки экрана
 }
-
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
@@ -793,7 +791,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     // Создаем главное окно приложения
-    hWnd = CreateWindow(L"SnakeGame", L"Snake Game", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+    hWnd = CreateWindow(L"SnakeGame", L"Snake Game", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0, 400, 400, NULL, NULL, hInstance, NULL);
 
     if (!hWnd) {
         return 0;
@@ -861,4 +859,3 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     }
     return CallNextHookEx(g_hook, nCode, wParam, lParam);
 }
-
