@@ -797,10 +797,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 0;
     }
 
-    restartButton = CreateWindow(L"BUTTON", L"Restart", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 10, 50, 100, 30, hWnd, (HMENU)IDC_RESTART_BUTTON, hInstance, NULL);
-    // Устанавливаем цвет фона кнопки "Restart"
-    // 
-    // Проверьте, что кнопка успешно создана
+    restartButton = CreateWindow(L"BUTTON", L"Restart", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | BS_PUSHBUTTON, 10, 50, 100, 30, hWnd, (HMENU)IDC_RESTART_BUTTON, hInstance, NULL);
+
     if (!restartButton) {
         MessageBox(hWnd, L"Failed to create the restart button!", L"Error", MB_ICONERROR | MB_OK);
         return 0;
