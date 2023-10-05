@@ -35,6 +35,9 @@
     <ClCompile Include="LR1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="prev.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="LR1.rc">

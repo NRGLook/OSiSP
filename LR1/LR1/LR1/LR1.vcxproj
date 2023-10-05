@@ -135,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LR1.cpp" />
+    <ClCompile Include="prev.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="LR1.rc" />
