@@ -53,7 +53,7 @@ void CreateMemoryMapping() {
         sharedMemoryName);
 
     if (hMapFile == NULL) {
-        cout << "Не удалось создать объект отображения файла" << endl;
+        cout << "Failed to create file display object" << endl;
         return;
     }
 
@@ -61,7 +61,7 @@ void CreateMemoryMapping() {
     pBuf = (LPCTSTR)MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SnakeSegment));
 
     if (pBuf == NULL) {
-        cout << "Не удалось отобразить вид файла" << endl;
+        cout << "Failed to display file view" << endl;
         CloseHandle(hMapFile);
         return;
     }
@@ -111,15 +111,17 @@ void LoadGame() {
         }
         file.close();
 
-        lock_guard<mutex> lock(snakeMutex);
-        snake = newSnake;
-    }
+        SnakeSegment segment;
+        memcpy(&segment, pBuf, sizeof(SnakeSegment));
 
-    SnakeSegment segment;
-    memcpy(&segment, pBuf, sizeof(SnakeSegment));
-    lock_guard<mutex> lock(snakeMutex);
-    snake.push_front(segment);
+        {
+            lock_guard<mutex> lock(snakeMutex);
+            snake = newSnake;
+            snake.push_front(segment);
+        }
+    }
 }
+
 
 // Функция для отрисовки ячейки на экране
 void DrawCell(HDC hdc, int x, int y, COLORREF color) {
@@ -222,7 +224,7 @@ void PaintGame(HDC hdc) {
     DeleteObject(greenBrush);
 
     wstring foodEatenText = L"Get: " + to_wstring(foodEaten);
-    TextOut(hdc, 10, 10, foodEatenText.c_str(), foodEatenText.length());
+    TextOut(hdc, 10, 10, foodEatenText.c_str(), static_cast<int>(foodEatenText.length()));
 
     SetBkColor(hdc, RGB(0, 255, 0));
     SetTextColor(hdc, RGB(0, 0, 0));
@@ -236,7 +238,7 @@ void PaintGame(HDC hdc) {
     }
 
     if (gameOver) {
-        TextOut(hdc, 10, 30, L"Game Over", 15);
+        TextOut(hdc, 10, 30, L"Game Over", 9);
     }
 }
 
@@ -289,7 +291,7 @@ LRESULT CALLBACK RestartButtonProc(HWND hwnd, UINT message, WPARAM wParam, LPARA
 }
 
 // Главная функция приложения
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
