@@ -10,40 +10,38 @@
 
 using namespace std;
 
-const int gridSize = 25; // Размер ячейки сетки
-const int screenWidth = 1100; // Ширина экрана
-const int screenHeight = 800; // Высота экрана
+const int gridSize = 25;
+const int screenWidth = 1100;
+const int screenHeight = 800;
 
-const wchar_t* saveFileName = L"D:\\Study\\OSiSP\\LR1\\LR1\\snake_save.bin"; // Путь к файлу сохранения
-const wchar_t* sharedMemoryName = L"MySharedMemory"; // Имя общей памяти
+const wchar_t* saveFileName = L"D:\\Study\\OSiSP\\LR1\\LR1\\snake_save.bin";
+const wchar_t* sharedMemoryName = L"MySharedMemory";
 
-HWND hWnd; // Дескриптор главного окна
-HWND restartButton; // Дескриптор кнопки перезапуска
-HHOOK g_hook = NULL; // Дескриптор глобального хука
+std::thread gameUpdateThread;
 
-// Структура для хранения координат сегмента змейки
+HWND hWnd;
+HWND restartButton;
+HHOOK g_hook = NULL;
+
 struct SnakeSegment {
     int x, y;
     SnakeSegment() : x(0), y(0) {}
     SnakeSegment(int _x, int _y) : x(_x), y(_y) {}
 };
 
-// Объявление функции KeyboardProc
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 
-deque<SnakeSegment> snake; // Двусторонняя очередь для хранения сегментов змейки
-int foodX, foodY; // Координаты еды
-bool gameOver = false; // Флаг окончания игры
-int direction = 1; // Направление движения змейки (0 - влево, 1 - вверх, 2 - вправо, 3 - вниз)
-int foodEaten = 0; // Счетчик съеденной еды
+deque<SnakeSegment> snake;
+int foodX, foodY;
+bool gameOver = false;
+int direction = 1;
+int foodEaten = 0;
 
-mutex snakeMutex; // Мьютекс для синхронизации доступа к данным змейки
-HANDLE hMapFile; // Дескриптор области памяти
-LPCTSTR pBuf; // Указатель на область памяти (голова змеи)
+mutex snakeMutex;
+HANDLE hMapFile;
+LPCTSTR pBuf;
 
-// Функция для создания области общей памяти
 void CreateMemoryMapping() {
-    // функция создает объект отображения файла, который ассоциируется с физическим файлом на диске или существующим объектом отображения файла
     hMapFile = CreateFileMapping(
         INVALID_HANDLE_VALUE,
         NULL,
@@ -57,7 +55,6 @@ void CreateMemoryMapping() {
         return;
     }
 
-    // отображает файл в адресное пространство вашего процесса. Это позволяет вам работать с данными из файла, как если бы они находились в памяти. 
     pBuf = (LPCTSTR)MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SnakeSegment));
 
     if (pBuf == NULL) {
@@ -67,15 +64,11 @@ void CreateMemoryMapping() {
     }
 }
 
-// Функция для закрытия области общей памяти
 void CloseMemoryMapping() {
-    // отключает связь между отображением и физическим файлом.
     UnmapViewOfFile(pBuf);
-    //  освобождает ресурсы, связанные с объектом отображения файла, и завершает работу с ним
     CloseHandle(hMapFile);
 }
 
-// Функция для сохранения состояния игры
 void SaveGame() {
     lock_guard<mutex> lock(snakeMutex);
 
@@ -96,7 +89,6 @@ void SaveGame() {
     memcpy((LPVOID)pBuf, &segment, sizeof(SnakeSegment));
 }
 
-// Функция для загрузки состояния игры
 void LoadGame() {
     ifstream file(saveFileName, ios::binary);
     if (file.is_open()) {
@@ -122,8 +114,6 @@ void LoadGame() {
     }
 }
 
-
-// Функция для отрисовки ячейки на экране
 void DrawCell(HDC hdc, int x, int y, COLORREF color) {
     int cellWidth = screenWidth / gridSize;
     int cellHeight = screenHeight / gridSize;
@@ -138,7 +128,6 @@ void DrawCell(HDC hdc, int x, int y, COLORREF color) {
     DeleteObject(pen);
 }
 
-// Функция для обработки пользовательского ввода
 void HandleInput(WPARAM wParam) {
     switch (wParam) {
     case VK_LEFT:
@@ -162,7 +151,6 @@ void HandleInput(WPARAM wParam) {
     }
 }
 
-// Функция для обновления состояния игры
 void UpdateGame(HWND hWnd) {
     if (snake.empty()) {
         return;
@@ -215,7 +203,6 @@ void UpdateGame(HWND hWnd) {
     InvalidateRect(hWnd, NULL, TRUE);
 }
 
-// Функция для отрисовки игры на экране
 void PaintGame(HDC hdc) {
     RECT clientRect;
     GetClientRect(hWnd, &clientRect);
@@ -242,7 +229,6 @@ void PaintGame(HDC hdc) {
     }
 }
 
-// Функция для перезапуска игры
 void RestartGame() {
     lock_guard<mutex> lock(snakeMutex);
     snake.clear();
@@ -255,7 +241,6 @@ void RestartGame() {
     InvalidateRect(hWnd, NULL, TRUE);
 }
 
-// Функция обработки сообщений главного окна
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
     case WM_KEYDOWN:
@@ -276,7 +261,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     return 0;
 }
 
-// Функция обработки сообщений кнопки перезапуска
 LRESULT CALLBACK RestartButtonProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
     case WM_COMMAND:
@@ -290,12 +274,12 @@ LRESULT CALLBACK RestartButtonProc(HWND hwnd, UINT message, WPARAM wParam, LPARA
     return 0;
 }
 
-// Главная функция приложения
+void CreateGameUpdateThread();
+
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // Регистрация класса окна
     WNDCLASSEX wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
     wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -314,22 +298,19 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
         return 0;
     }
 
-    // Создание главного окна
     hWnd = CreateWindow(L"SnakeGame", L"Snake Game", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0, 400, 400, NULL, NULL, hInstance, NULL);
 
     if (!hWnd) {
         return 0;
     }
 
-    // Создание кнопки перезапуска
     restartButton = CreateWindow(L"BUTTON", L"Restart", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | BS_PUSHBUTTON, 10, 50, 100, 30, hWnd, (HMENU)IDC_RESTART_BUTTON, hInstance, NULL);
 
     if (!restartButton) {
-        MessageBox(hWnd, L"Не удалось создать кнопку перезапуска!", L"Ошибка", MB_ICONERROR | MB_OK);
+        MessageBox(hWnd, L"Failed to create restart button!", L"Error", MB_ICONERROR | MB_OK);
         return 0;
     }
 
-    // Установка процедуры окна для кнопки перезапуска
     WNDPROC oldButtonProc = (WNDPROC)SetWindowLongPtr(restartButton, GWLP_WNDPROC, (LONG_PTR)RestartButtonProc);
     if (!oldButtonProc) {
         return 0;
@@ -342,13 +323,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     foodX = rand() % (screenWidth / gridSize);
     foodY = rand() % (screenHeight / gridSize);
 
-    // Установка глобального клавиатурного хука
     g_hook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, NULL, 0);
     if (g_hook == NULL) {
-        MessageBox(hWnd, L"Не удалось установить клавиатурный хук!", L"Ошибка", MB_ICONERROR | MB_OK);
+        MessageBox(hWnd, L"Failed to set keyboard hook!", L"Error", MB_ICONERROR | MB_OK);
     }
 
-    // Создание области общей памяти
     CreateMemoryMapping();
 
     MSG msg;
@@ -369,12 +348,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
         }
     }
 
-    // Закрытие области общей памяти
     CloseMemoryMapping();
     return (int)msg.wParam;
 }
 
-// Функция для обработки клавиатурных событий с помощью глобального хука
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode == HC_ACTION && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)) {
         KBDLLHOOKSTRUCT* pKB = (KBDLLHOOKSTRUCT*)lParam;
@@ -383,4 +360,16 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
         }
     }
     return CallNextHookEx(g_hook, nCode, wParam, lParam);
+}
+
+void CreateGameUpdateThread() {
+    gameUpdateThread = std::thread([] {
+        while (true) {
+            if (!gameOver) {
+                UpdateGame(hWnd);
+                InvalidateRect(hWnd, NULL, TRUE);
+            }
+            Sleep(100);
+        }
+        });
 }
