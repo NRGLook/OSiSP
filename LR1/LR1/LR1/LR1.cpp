@@ -5,6 +5,7 @@
 #include <mutex>
 #include <string>
 #include <iostream>
+#include <chrono>
 #include <fstream>
 #include "global_defines.h"
 
@@ -152,6 +153,8 @@ void HandleInput(WPARAM wParam) {
 }
 
 void UpdateGame(HWND hWnd) {
+    auto start = std::chrono::high_resolution_clock::now();
+
     if (snake.empty()) {
         return;
     }
@@ -201,6 +204,13 @@ void UpdateGame(HWND hWnd) {
 
     snake.push_front(SnakeSegment(headX, headY));
     InvalidateRect(hWnd, NULL, TRUE);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+    // Отображение частоты обновления в верхней части окна
+    wstring updateRateText = L"Update Rate (μs): " + to_wstring(duration.count());
+    TextOut(GetDC(hWnd), 10, 10, updateRateText.c_str(), static_cast<int>(updateRateText.length()));
 }
 
 void PaintGame(HDC hdc) {
@@ -210,15 +220,20 @@ void PaintGame(HDC hdc) {
     FillRect(hdc, &clientRect, greenBrush);
     DeleteObject(greenBrush);
 
+    auto start = std::chrono::high_resolution_clock::now();
+
     wstring foodEatenText = L"Get: " + to_wstring(foodEaten);
-    TextOut(hdc, 10, 10, foodEatenText.c_str(), static_cast<int>(foodEatenText.length()));
 
-    SetBkColor(hdc, RGB(0, 255, 0));
-    SetTextColor(hdc, RGB(0, 0, 0));
-    DrawCell(hdc, foodX, foodY, RGB(255, 0, 0));
+    COLORREF backgroundColor = RGB(0, 0, 0);
+    COLORREF textColor = RGB(255, 255, 255);
 
-    SetBkColor(hdc, RGB(0, 255, 0));
-    SetTextColor(hdc, RGB(0, 0, 0));
+    SetBkColor(hdc, backgroundColor);
+    SetTextColor(hdc, textColor);
+
+    TextOut(hdc, 10, 30, foodEatenText.c_str(), static_cast<int>(foodEatenText.length()));
+
+    DrawCell(hdc, foodX, foodY, RGB(255, 0, 0)); // for apple
+
     lock_guard<mutex> lock(snakeMutex);
     for (const SnakeSegment& segment : snake) {
         DrawCell(hdc, segment.x, segment.y, RGB(0, 0, 0));
@@ -227,7 +242,14 @@ void PaintGame(HDC hdc) {
     if (gameOver) {
         TextOut(hdc, 10, 30, L"Game Over", 9);
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+    wstring updateRateText = L"Update Rate (μs): " + to_wstring(duration.count());
+    TextOut(hdc, 10, 10, updateRateText.c_str(), static_cast<int>(updateRateText.length()));
 }
+
 
 void RestartGame() {
     lock_guard<mutex> lock(snakeMutex);
