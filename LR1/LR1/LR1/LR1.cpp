@@ -54,21 +54,25 @@ void SetProcessPriority() {
     }
 }
 
+// Создаём разделяемую память, которая будет использ для обмена данными между процессами(для хранения координат головы змейки)
 void CreateMemoryMapping() {
+    // создаем область опр памяти
     hMapFile = CreateFileMapping(
-        INVALID_HANDLE_VALUE,
-        NULL,
-        PAGE_READWRITE,
-        0,
-        sizeof(SnakeSegment),
-        sharedMemoryName);
+        INVALID_HANDLE_VALUE, // дескриптор файла 
+        NULL, // атрибут для области раздел памяти
+        PAGE_READWRITE, // опр защиту - чтение + запись
+        0, // - старшее слово макс размера файла-карты, у нас без привязки -> 0
+        sizeof(SnakeSegment), // младш слово макс размера файла-карты 
+        sharedMemoryName);// созд идентификатора области раздел памяти - для доступа данной области разделяем памяти
 
     if (hMapFile == NULL) {
         MessageBox(hWnd, L"Failed to create file display object", L"Error", MB_ICONERROR | MB_OK);
         return;
     }
 
+    // созд представл разделяем памяти (через которое будем получать доступ к данным в области раздел памяти)
     pBuf = (LPCTSTR)MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SnakeSegment));
+    // 0 + 0 - без ограничений - sizeof.. - размер части области разделяем памяти
 
     if (pBuf == NULL) {
         MessageBox(hWnd, L"Failed to display file view", L"Error", MB_ICONERROR | MB_OK);
@@ -77,11 +81,13 @@ void CreateMemoryMapping() {
     }
 }
 
+// Закрываем и освобожд связанные с разделяемой памятью ресурсы
 void CloseMemoryMapping() {
     UnmapViewOfFile(pBuf);
     CloseHandle(hMapFile);
 }
 
+// Сохраняем текущее состояние игры - положение змейки в бинарный файл
 void SaveGame() {
     lock_guard<mutex> lock(snakeMutex);
 
@@ -102,6 +108,7 @@ void SaveGame() {
     memcpy((LPVOID)pBuf, &segment, sizeof(SnakeSegment));
 }
 
+// Загружаем сохраненное состояние игры из файла
 void LoadGame() {
     ifstream file(saveFileName, ios::binary);
     if (file.is_open()) {
@@ -127,6 +134,7 @@ void LoadGame() {
     }
 }
 
+// Рисуем отд ячейку игрового поля - 1 - контекст устройства, координаты x + y - цвет
 void DrawCell(HDC hdc, int x, int y, COLORREF color) {
     int cellWidth = screenWidth / gridSize;
     int cellHeight = screenHeight / gridSize;
@@ -141,6 +149,7 @@ void DrawCell(HDC hdc, int x, int y, COLORREF color) {
     DeleteObject(pen);
 }
 
+// Принимаем код клавиши - обрабатываем пользов ввод(управление и действия(сохр и загружать))
 void HandleInput(WPARAM wParam) {
     switch (wParam) {
     case VK_LEFT:
@@ -164,7 +173,7 @@ void HandleInput(WPARAM wParam) {
     }
 }
 
-
+// Обновл состояние игры(движение змейки + проверку столкновений) - принимаем дескриптор окна
 void UpdateGame(HWND hWnd) {
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -225,7 +234,7 @@ void UpdateGame(HWND hWnd) {
     TextOut(GetDC(hWnd), 10, 10, updateRateText.c_str(), static_cast<int>(updateRateText.length()));
 }
 
-// Функция для обновления игры в отдельном потоке
+// Функция для обновления игры в отдельном потоке - переодич обновляя состояние игры
 void GameUpdateThread(HWND hWnd) {
     while (true) {
         if (!gameOver) {
@@ -236,6 +245,7 @@ void GameUpdateThread(HWND hWnd) {
     }
 }
 
+// Исп перезапуск игры + нач инициал игровых параметров
 void RestartGame() {
     lock_guard<mutex> lock(snakeMutex);
     snake.clear();
@@ -248,7 +258,7 @@ void RestartGame() {
     InvalidateRect(hWnd, NULL, TRUE);
 }
 
-// Новая функция для обработки пользовательского ввода в отдельном потоке
+// Новая функция для обработки пользовательского ввода в отдельном потоке - сейчас передаем R - можем еще клавиши управления
 void InputThread() {
     while (true) {
 
@@ -260,6 +270,7 @@ void InputThread() {
     }
 }
 
+// Отрисовка всего игрового поля и элементов игры (змейка + еда)
 void PaintGame(HDC hdc) {
     RECT clientRect;
     GetClientRect(hWnd, &clientRect);
@@ -298,7 +309,7 @@ void PaintGame(HDC hdc) {
 }
 
 
-
+// Дескр окна(какое окно должно быть обработано) + код сообщ(опр какая часть кода будет выполнена в ответ на сообщение) + wParam - содердит код нажат клавиши + lParam - содерж доп флаги или инфо о клавише
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
     case WM_KEYDOWN:
@@ -332,6 +343,7 @@ LRESULT CALLBACK RestartButtonProc(HWND hwnd, UINT message, WPARAM wParam, LPARA
     return 0;
 }
 
+// Точка входа в приложение - создаем окно - регистрир обработчик сообщ + запускаем потоки и обрабатываем цикл сообщений
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
@@ -414,6 +426,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return (int)msg.wParam;
 }
 
+// Параметры для перехвата клавиатурных событий
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode == HC_ACTION) {
         if (wParam == WM_KEYDOWN) {
