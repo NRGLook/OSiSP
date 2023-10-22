@@ -866,6 +866,7 @@
 #include <string>
 #include <chrono>
 #include <fstream>
+
 #include "global_defines.h"
 
 using namespace std;
@@ -878,6 +879,7 @@ const wchar_t* saveFileName = L"D:\\Study\\OSiSP\\LR1\\LR1\\snake_save.bin";
 const wchar_t* sharedMemoryName = L"MySharedMemory";
 
 std::thread inputThread; // Новый поток для обработки пользовательского ввода
+std::thread updateGameThread; // Новый поток для функции обновления игры 
 
 HWND hWnd;
 HWND restartButton;
