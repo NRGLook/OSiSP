@@ -1,62 +1,51 @@
 ﻿#include <Windows.h>
 #include <tchar.h>
+#include <evntrace.h>
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-bool resolutionChanged = false;
-bool inputLocaleChanged = false;
-bool wallpaperChanged = false;
-bool systemColorChanged = false;
-bool fontChanged = false;
+int mainScreenWidth = -1;
+int mainScreenHeight = -1;
+HKL mainInputLocale = NULL;
 
-int currentScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-int currentScreenHeight = GetSystemMetrics(SM_CYSCREEN);
-HKL currentInputLocale = GetKeyboardLayout(0);
+// Функция для создания записи в журнале Windows Event Log
+void LogEventToEventLog(LPCTSTR message) {
+    HANDLE hEventLog = RegisterEventSource(NULL, _T("ParameterMonitorApp"));
+
+    if (hEventLog) {
+        const WORD eventCategory = 1;
+        const DWORD eventId = 1001;
+
+        ReportEvent(hEventLog, EVENTLOG_INFORMATION_TYPE, eventCategory, eventId, NULL, 1, 0, &message, NULL);
+
+        DeregisterEventSource(hEventLog);
+    }
+
+    MessageBox(NULL, message, _T("Информация"), MB_ICONINFORMATION);
+}
+
 
 void HandleResolutionChange() {
     int newScreenWidth = GetSystemMetrics(SM_CXSCREEN);
     int newScreenHeight = GetSystemMetrics(SM_CYSCREEN);
-    if (newScreenWidth != currentScreenWidth || newScreenHeight != currentScreenHeight) {
-        if (!resolutionChanged) {
-            MessageBox(NULL, _T("Изменилось разрешение экрана!"), _T("Изменение параметров"), MB_ICONINFORMATION);
-            resolutionChanged = true;
-        }
-        currentScreenWidth = newScreenWidth;
-        currentScreenHeight = newScreenHeight;
+    if (newScreenWidth != mainScreenWidth || newScreenHeight != mainScreenHeight) {
+        mainScreenWidth = newScreenWidth;
+        mainScreenHeight = newScreenHeight;
+        LogEventToEventLog(_T("Изменилось разрешение экрана!"));
     }
 }
 
 void HandleInputLocaleChange() {
     HKL newInputLocale = GetKeyboardLayout(0);
-    if (newInputLocale != currentInputLocale) {
-        if (!inputLocaleChanged) {
-            MessageBox(NULL, _T("Изменился язык ввода!"), _T("Изменение параметров"), MB_ICONINFORMATION);
-            inputLocaleChanged = true;
-        }
-        currentInputLocale = newInputLocale;
+    if (newInputLocale != mainInputLocale) {
+        mainInputLocale = newInputLocale;
+        LogEventToEventLog(_T("Изменился язык ввода!"));
     }
 }
 
 void HandleSystemParamChange(UINT uiAction) {
     if (uiAction == SPI_SETDESKWALLPAPER) {
-        if (!wallpaperChanged) {
-            MessageBox(NULL, _T("Изменились обои рабочего стола!"), _T("Изменение параметров"), MB_ICONINFORMATION);
-            wallpaperChanged = true;
-        }
-    }
-}
-
-void HandleSystemColorChange() {
-    if (!systemColorChanged) {
-        MessageBox(NULL, _T("Изменились системные цвета!"), _T("Изменение параметров"), MB_ICONINFORMATION);
-        systemColorChanged = true;
-    }
-}
-
-void HandleFontChange() {
-    if (!fontChanged) {
-        MessageBox(NULL, _T("Изменился шрифт системы!"), _T("Изменение параметров"), MB_ICONINFORMATION);
-        fontChanged = true;
+        LogEventToEventLog(_T("Изменились обои рабочего стола!"));
     }
 }
 
@@ -73,6 +62,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     while (GetMessage(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
+
+        HandleResolutionChange();
+        HandleInputLocaleChange();
     }
 
     return msg.wParam;
@@ -82,7 +74,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
     case WM_CREATE:
         SetTimer(hwnd, 1, 1000, NULL);
-        break;
 
     case WM_TIMER:
         if (wParam == 1) {
@@ -101,14 +92,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
     case WM_SETTINGCHANGE:
         HandleSystemParamChange(static_cast<UINT>(wParam));
-        break;
-
-    case WM_SYSCOLORCHANGE:
-        HandleSystemColorChange();
-        break;
-
-    case WM_FONTCHANGE:
-        HandleFontChange();
         break;
 
     case WM_DESTROY:
