@@ -22,7 +22,6 @@ int main() {
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
 
-    // Ввод адреса сервера и порта с клавиатуры
     std::string serverIP;
     int serverPort;
     std::cout << "Enter the server IP address: ";

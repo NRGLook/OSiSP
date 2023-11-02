@@ -17,9 +17,9 @@ void HandleClient(SOCKET clientSocket) {
         }
 
         buffer[bytesReceived] = '\0';
+
         std::cout << "Client: " << buffer << std::endl;
 
-        // Отправка ответа клиенту
         send(clientSocket, buffer, bytesReceived, 0);
     }
 
@@ -42,7 +42,7 @@ int main() {
 
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(12345); // Порт сервера
+    serverAddress.sin_port = htons(12345);
     serverAddress.sin_addr.s_addr = INADDR_ANY; // Принимаем подключения на всех доступных интерфейсах
 
     if (bind(serverSocket, (sockaddr*)&serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
