@@ -40,7 +40,7 @@ int main() {
         return 1;
     }
 
-    std::cout << "Сервер запущен и ожидает подключений..." << std::endl;
+    std::cout << "The server is running and waiting for connections..." << std::endl;
 
     while (true) {
         // Принимаем подключение от клиента
@@ -50,7 +50,7 @@ int main() {
             continue;
         }
 
-        std::cout << "Клиент подключен." << std::endl;
+        std::cout << "The client is connected." << std::endl;
 
         char buffer[1024];
         int bytesReceived;
@@ -58,19 +58,19 @@ int main() {
         while (true) {
             bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
             if (bytesReceived <= 0) {
-                std::cerr << "Соединение с клиентом разорвано." << std::endl;
+                std::cerr << "The connection to the client has been lost." << std::endl;
                 break;
             }
 
             buffer[bytesReceived] = '\0';
-            std::cout << "Клиент: " << buffer << std::endl;
+            std::cout << "Client: " << buffer << std::endl;
 
             // Отправка ответа клиенту
             send(clientSocket, buffer, bytesReceived, 0);
         }
 
         closesocket(clientSocket);
-        std::cout << "Ожидание нового подключения..." << std::endl;
+        std::cout << "Waiting for a new connection..." << std::endl;
     }
 
     // Закрытие сокета и очистка Winsock

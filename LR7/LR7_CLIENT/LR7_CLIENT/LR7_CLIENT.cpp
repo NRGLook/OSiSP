@@ -12,7 +12,6 @@ int main() {
         return 1;
     }
 
-    // Создание сокета для клиента
     SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (clientSocket == INVALID_SOCKET) {
         std::cerr << "Failed to create socket." << std::endl;
@@ -20,22 +19,28 @@ int main() {
         return 1;
     }
 
-    // Устанавливаем адрес сервера, к которому хотим подключиться
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(12345); // Порт сервера
 
-    // Используем функцию inet_pton для преобразования IP-адреса
-    if (inet_pton(AF_INET, "192.168.0.100", &serverAddress.sin_addr) != 1) {
+    // Ввод адреса сервера и порта с клавиатуры
+    std::string serverIP;
+    int serverPort;
+    std::cout << "Enter the server IP address: ";
+    std::cin >> serverIP;
+    std::cout << "Enter the server port: ";
+    std::cin >> serverPort;
+
+    if (inet_pton(AF_INET, serverIP.c_str(), &serverAddress.sin_addr) != 1) {
         std::cerr << "Invalid IP address." << std::endl;
         closesocket(clientSocket);
         WSACleanup();
         return 1;
     }
 
-    // Подключение к серверу
+    serverAddress.sin_port = htons(serverPort);
+
     if (connect(clientSocket, (sockaddr*)&serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
-        std::cerr << "Failed to connect to server." << std::endl;
+        std::cerr << "Failed to connect to the server." << std::endl;
         closesocket(clientSocket);
         WSACleanup();
         return 1;
@@ -43,28 +48,16 @@ int main() {
 
     std::string message;
     while (true) {
-        std::cout << "Введите сообщение (или 'exit' для выхода): ";
+        std::cout << "Enter a message (or 'exit' to exit): ";
         std::getline(std::cin, message);
 
-        // Отправка сообщения на сервер
         send(clientSocket, message.c_str(), static_cast<int>(message.size()), 0);
 
         if (message == "exit") {
             break;
         }
-
-        char buffer[1024];
-        int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
-        if (bytesReceived == SOCKET_ERROR) {
-            std::cerr << "Error in receiving data from server." << std::endl;
-            break;
-        }
-
-        buffer[bytesReceived] = '\0';
-        std::cout << "Сервер: " << buffer << std::endl;
     }
 
-    // Закрытие сокета и очистка Winsock
     closesocket(clientSocket);
     WSACleanup();
 
