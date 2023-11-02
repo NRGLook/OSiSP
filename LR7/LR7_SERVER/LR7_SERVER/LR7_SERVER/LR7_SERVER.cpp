@@ -1,7 +1,30 @@
 ﻿#include <iostream>
 #include <Winsock2.h>
+#include <vector>
+#include <thread>
 
 #pragma comment(lib, "ws2_32.lib")
+
+void HandleClient(SOCKET clientSocket) {
+    char buffer[1024];
+    int bytesReceived;
+
+    while (true) {
+        bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+        if (bytesReceived <= 0) {
+            std::cerr << "The connection to the client has been lost." << std::endl;
+            break;
+        }
+
+        buffer[bytesReceived] = '\0';
+        std::cout << "Client: " << buffer << std::endl;
+
+        // Отправка ответа клиенту
+        send(clientSocket, buffer, bytesReceived, 0);
+    }
+
+    closesocket(clientSocket);
+}
 
 int main() {
     WSADATA wsaData;
@@ -10,7 +33,6 @@ int main() {
         return 1;
     }
 
-    // Создание сокета для сервера
     SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == INVALID_SOCKET) {
         std::cerr << "Failed to create socket." << std::endl;
@@ -18,13 +40,11 @@ int main() {
         return 1;
     }
 
-    // Устанавливаем адрес сервера
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(12345); // Порт сервера
     serverAddress.sin_addr.s_addr = INADDR_ANY; // Принимаем подключения на всех доступных интерфейсах
 
-    // Привязываем сокет к адресу и порту
     if (bind(serverSocket, (sockaddr*)&serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
         std::cerr << "Failed to bind socket." << std::endl;
         closesocket(serverSocket);
@@ -32,7 +52,6 @@ int main() {
         return 1;
     }
 
-    // Ожидание подключений
     if (listen(serverSocket, SOMAXCONN) == SOCKET_ERROR) {
         std::cerr << "Failed to listen for connections." << std::endl;
         closesocket(serverSocket);
@@ -42,8 +61,9 @@ int main() {
 
     std::cout << "The server is running and waiting for connections..." << std::endl;
 
+    std::vector<std::thread> clientThreads;
+
     while (true) {
-        // Принимаем подключение от клиента
         SOCKET clientSocket = accept(serverSocket, NULL, NULL);
         if (clientSocket == INVALID_SOCKET) {
             std::cerr << "Failed to accept connection." << std::endl;
@@ -52,30 +72,15 @@ int main() {
 
         std::cout << "The client is connected." << std::endl;
 
-        char buffer[1024];
-        int bytesReceived;
-
-        while (true) {
-            bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
-            if (bytesReceived <= 0) {
-                std::cerr << "The connection to the client has been lost." << std::endl;
-                break;
-            }
-
-            buffer[bytesReceived] = '\0';
-            std::cout << "Client: " << buffer << std::endl;
-
-            // Отправка ответа клиенту
-            send(clientSocket, buffer, bytesReceived, 0);
-        }
-
-        closesocket(clientSocket);
-        std::cout << "Waiting for a new connection..." << std::endl;
+        clientThreads.emplace_back(HandleClient, clientSocket);
     }
 
-    // Закрытие сокета и очистка Winsock
     closesocket(serverSocket);
     WSACleanup();
+
+    for (auto& thread : clientThreads) {
+        thread.join();
+    }
 
     return 0;
 }
